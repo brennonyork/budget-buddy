@@ -1,0 +1,88 @@
+#!/usr/bin/env sh
+
+# Grab the directory of this script
+# - from https://stackoverflow.com/a/246128
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+# Verbose variable to set through command line
+VERBOSE=""
+# The financial source as provided by the user
+FIN_SRC_PROVIDED=""
+# The file provided by the user
+FILE_PROVIDED=""
+
+STAGING_DIR="${DIR}/../staging"
+OUTPUT_DIR="${DIR}/../output"
+
+# Source in the core functions from the lib/ directory
+source "${DIR}/../lib/transform.sh"
+source "${DIR}/../lib/help.sh"
+
+# Command line parser for the help option
+#  $ budget-buddy --help
+#  $ budget-buddy -h
+if [ "${1}" = "--help" ] || [ "${1}" = "-h" ]; then
+    print_help
+    exit 0
+fi
+
+# Command line parser
+#   $ budget-buddy [ opts ] -f <file> -n <finance source>
+while (( "$#" )); do
+    case "${1}" in
+	"-v" | "--verbose")
+	    VERBOSE="1"
+	    shift
+	    ;;
+	"-f" | "--file")
+	    FILE_PROVIDED="${2}"
+	    shift 2
+	    ;;
+	"-n" | "--finance-source")
+	    FIN_SRC_PROVIDED="${2}"
+	    shift 2
+	    ;;
+	*)
+	    printf "WARN: Unrecognized option ${1}\n"
+	    shift
+	    ;;
+    esac
+done
+
+[ "${VERBOSE}" = "1" ] && \
+    printf "FIN_SRC_PROVIDED=${FIN_SRC_PROVIDED}\n" && \
+    printf "FILE_PROVIDED=${FILE_PROVIDED}\n"
+
+# Check if a financial source was even provided
+if [ "${FIN_SRC_PROVIDED}" = "" ] ||
+       [ "${FILE_PROVIDED}" = "" ]; then
+    printf "ERROR: no financial source or file provided\n"
+    printf "  $ budget-buddy --help\n"
+    exit 1
+fi
+
+# Boolean to determine if the financial source provided by the user
+# is present in the FINANCE_SOURCES provided by the script
+FIN_SRC_PRESENT=0
+
+# Really bad/sad way to check if an element is in a bash array :(
+for fin_src in "${FINANCE_SOURCES[@]}"; do
+    if [ "${FIN_SRC_PROVIDED}" = "${fin_src}" ]; then
+	FIN_SRC_PRESENT=1
+    fi
+done
+
+if [ "${FIN_SRC_PRESENT}" = 0 ]; then
+    printf "ERROR: The script currently doesn't support financial "
+    printf "source ${FIN_SRC_PROVIDED}\n"
+    exit 2
+fi
+
+mkdir -p "${STAGING_DIR}"
+mkdir -p "${OUTPUT_DIR}"
+
+#check_for_ruleset_file $src
+column_transform "${FIN_SRC_PROVIDED}" "${FILE_PROVIDED}" "${STAGING_DIR}"
+#ruleset_transform "${FIN_SRC_PROVIDED}" "${STAGING_DIR}"
+
+# rm -rf "${STAGING_DIR}"
