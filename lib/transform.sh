@@ -3,7 +3,7 @@
 # Unique set of short form financial sources that the program
 # will execute over for (1) column transforms and (2) ruleset
 # application
-FINANCE_SOURCES=("c1" "boa" "chase")
+FINANCE_SOURCES=("c1" "boa" "chase" "usaa")
 
 # Arg1 - short form abbreviation for the finance source we wish
 #        to transform
@@ -28,7 +28,9 @@ check_for_ruleset_file() {
 # source - Arg1
 #
 # Column Set - columns should be comma separated in this order:
-#   Transaction Date: date the transaction happened w the merchant
+#   XXX Transaction Date: date the transaction happened w the merchant
+#   --> Update - Can't have transaction date  because multiple
+#   -->          institutions don't provide this
 #   Posted Date: date the transaction posted to the account
 #   Description: merchant string detailing what the purchase was
 #   Category: the category this transaction should be tagged as
@@ -37,17 +39,31 @@ check_for_ruleset_file() {
 column_transform() {
     case "${1}" in
 	"c1")
-	    cut -d, -f1-2,4-7 "${2}" | \
+	    # Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit
+	    cut -d, -f2,4-7 "${2}" | \
 		awk -F',' '{
-			    printf $1","$2","$3","$4","; 
-       			    if ( $6 == "" ) { print -$5 } else { print $6 }
+			    printf $1","$2","$3","; 
+       			    if ( $5 == "" ) { print -$4 } else { print $5 }
 			   }' > "${3}"
 	    ;;
 	"chase")
-	    cut -d, -f1-4,6 "${2}" > "${3}"
+	    # Transaction Date,Post Date,Description,Category,Type,Amount
+	    cut -d, -f2-4,6 "${2}" > "${3}"
 	    ;;
 	"boa")
-	    echo "bank of america"
+	    # Posted Date,Reference Number,Payee,Address,Amount
+	    cut -d, -f1,3,5 "${2}" | \
+		awk -F',' '{ print $1","$2",,"$3 }' > "${3}"
+	    ;;
+	"usaa")
+	    # Columns not defined
+	    cut -d, -f3,5-7 "${2}" | \
+		awk -F',' '{
+                            printf $1","$2","$3",";
+                            if ( substr($4, 1, 2) == "--" ) { 
+                              print substr($4,3) 
+                            } else { print $4 }
+                           }' > "${3}"
 	    ;;
 	*)
 	    echo "unrecognized"
