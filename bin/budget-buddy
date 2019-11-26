@@ -6,12 +6,13 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
 
 # Verbose variable to set through command line
 VERBOSE=""
-# The financial source as provided by the user
+
+# The financial source and file as provided by the user
 FIN_SRC_PROVIDED=""
-# The file provided by the user
 FILE_PROVIDED=""
 
-STAGING_DIR="${DIR}/../staging"
+# Staging (temporary) and output directories
+TMP_DIR="${DIR}/../tmp"
 OUTPUT_DIR="${DIR}/../output"
 
 # Source in the core functions from the lib/ directory
@@ -78,11 +79,14 @@ if [ "${FIN_SRC_PRESENT}" = 0 ]; then
     exit 2
 fi
 
-mkdir -p "${STAGING_DIR}"
+mkdir -p "${TMP_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
-#check_for_ruleset_file $src
-column_transform "${FIN_SRC_PROVIDED}" "${FILE_PROVIDED}" "${STAGING_DIR}"
-#ruleset_transform "${FIN_SRC_PROVIDED}" "${STAGING_DIR}"
+TMP_FILE="${TMP_DIR}/${FIN_SRC_PROVIDED}-tmp.txt"
+OUT_FILE="${OUTPUT_DIR}/${FIN_SRC_PROVIDED}.txt"
 
-# rm -rf "${STAGING_DIR}"
+#check_for_ruleset_file $src
+column_transform "${FIN_SRC_PROVIDED}" "${FILE_PROVIDED}" "${TMP_FILE}"
+#ruleset_transform "${FIN_SRC_PROVIDED}" "${TMP_FILE}" "${OUT_FILE}"
+
+# rm -rf "${TMP_DIR}"

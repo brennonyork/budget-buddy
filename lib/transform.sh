@@ -21,7 +21,7 @@ check_for_ruleset_file() {
 # Arg1 - short form abbreviation for the finance source we wish
 #        to transform
 # Arg2 - file to apply the transforms to
-# Arg3 - directory to output results to
+# Arg3 - temporary file name to place results into
 #
 # Transforms a given file - Arg2 - into the column set form below
 # with the rulesets written and applied for the given financial
@@ -35,17 +35,16 @@ check_for_ruleset_file() {
 #   Amount: amount of the transaction where positive values denote
 #           credits to the account, negatives denote sales or debits
 column_transform() {
-    STAGING_FILE="${3}/${1}-staging.txt"
-    case "$1" in
+    case "${1}" in
 	"c1")
 	    cut -d, -f1-2,4-7 "${2}" | \
 		awk -F',' '{
 			    printf $1","$2","$3","$4","; 
        			    if ( $6 == "" ) { print -$5 } else { print $6 }
-			   }' > "${STAGING_FILE}"
+			   }' > "${3}"
 	    ;;
 	"chase")
-	    cut -d, -f1-4,6 "${2}" > "${STAGING_FILE}"
+	    cut -d, -f1-4,6 "${2}" > "${3}"
 	    ;;
 	"boa")
 	    echo "bank of america"
