@@ -1,21 +1,36 @@
 #!/usr/bin/env sh
 
+# Handles operations in this order:
+# 1. 'transform' the columns to be in the correct order and only
+#    containing the columns needed
+# 2. remove the header from the file (if it exists)
+# 3. determine the maximum date from the file
+# 4. use the maximum date to rename the file so we can avoid
+#    naming conflicts after we've processed, useful given statements
+#    all start at different dates. this program *does not* dedupe
+#    individual transactions therefore needs to ensure we process each
+#    record exactly once and max date matches each statement
+# 5. merge all clean files from various financial sources into a single
+#    unified file
+# 6. sort the single file by date (1st column)
+# 7. cut the file up into monthly files starting and ending within the
+#    month (to remove the problem of various statements starting and
+#    ending at different times)
+# 8. for each monthly file apply the category rulesets
+
 # Grab the directory of this script
 # - from https://stackoverflow.com/a/246128
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
-
-# Verbose variable to set through command line
-VERBOSE=""
-
-# Setting that can be set through the command line
-FIN_SRC_PROVIDED=""
-FILE_PROVIDED=""
-SEARCH_DIR=""
 
 # Staging (temporary), output, and ruleset directories
 TMP_DIR="${DIR}/../tmp"
 OUTPUT_DIR="${DIR}/../output"
 RULESETS_DIR="${DIR}/../rulesets"
+MERGE_FILE="${TMP_DIR}/merged.csv"
+
+# Settings that can be set through the command line
+VERBOSE=""
+SEARCH_DIR=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -37,14 +52,6 @@ while (( "$#" )); do
 	    VERBOSE="1"
 	    shift
 	    ;;
-	"-f" | "--file")
-	    FILE_PROVIDED="${2}"
-	    shift 2
-	    ;;
-	"-n" | "--finance-source")
-	    FIN_SRC_PROVIDED="${2}"
-	    shift 2
-	    ;;
 	"-d" | "--directory")
 	    SEARCH_DIR="${2}"
 	    shift 2
@@ -56,22 +63,6 @@ while (( "$#" )); do
     esac
 done
 
-[ "${VERBOSE}" = "1" ] && \
-    printf "FIN_SRC_PROVIDED=${FIN_SRC_PROVIDED}\n" && \
-    printf "FILE_PROVIDED=${FILE_PROVIDED}\n"
-
-# Check if a financial source was even provided
-if [ "${FIN_SRC_PROVIDED}" = "" ] ||
-       [ "${FILE_PROVIDED}" = "" ]; then
-    printf "ERROR: no financial source or file provided\n"
-    printf "  $ budget-buddy --help\n"
-#    exit 1
-fi
-
-# Boolean to determine if the financial source provided by the user
-# is present in the FINANCE_SOURCES provided by the script
-FIN_SRC_PRESENT=0
-
 # Really bad/sad way to check if an element is in a bash array :(
 for fin_src in "${FINANCE_SOURCES[@]}"; do
     if [ "${FIN_SRC_PROVIDED}" = "${fin_src}" ]; then
@@ -79,19 +70,8 @@ for fin_src in "${FINANCE_SOURCES[@]}"; do
     fi
 done
 
-if [ "${FIN_SRC_PRESENT}" = 0 ]; then
-    printf "ERROR: The script currently doesn't support financial "
-    printf "source ${FIN_SRC_PROVIDED}\n"
-#    exit 2
-fi
-
 mkdir -p "${TMP_DIR}"
 mkdir -p "${OUTPUT_DIR}"
-
-#check_for_ruleset_file $src
-#if [ ! "${SEARCH_DIR}" = "" ]; then
-#    detect_source_files "${TMP_DIR}" "${SEARCH_DIR}"
-#fi
 
 for fin_src in "${FINANCE_SOURCES[@]}"; do
     mkdir -p "${TMP_DIR}/${fin_src}"
@@ -107,32 +87,69 @@ for line in $(find "${SEARCH_DIR}" -type f); do
     # if statements :grimace:
 
     # lets start w chase
-    if [[ "${filename}" =~ \
-			^Chase[0-9]{4}_Activity.*\.CSV$ ]] &&
-	   [ "${title}" = \
-			"Transaction Date,Post Date,Description,Category,Type,Amount" ]; then
+    if [[ "${filename}" \
+	      =~ ^Chase[0-9]{4}_Activity.*\.CSV$ ]] &&
+	   [ "${title}" \
+		 = "Transaction Date,Post Date,Description,Category,Type,Amount" ]; then
 	echo "chase"
 	handle_single_file "${TMP_DIR}/chase" \
 			   "${OUTPUT_DIR}/chase" \
 			   "${RULESETS_DIR}" \
 			   "${line}" \
-			   "chase"
+			   "chase" \
+			   "true" \
+			   "%M/%d/%Y"
 	# capital one
-    elif [[ "${filename}" =~ \
-			  ^[0-9]{4}-[0-9]{2}-[0-9]{2}_transaction_download.* ]] &&
-	     [ "${title}" = \
-			  "Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit" ]; then
+    elif [[ "${filename}" \
+		=~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_transaction_download.* ]] &&
+	     [ "${title}" \
+		   = "Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit" ]; then
 	echo "capital one"
+	handle_single_file "${TMP_DIR}/c1" \
+			   "${OUTPUT_DIR}/c1" \
+			   "${RULESETS_DIR}" \
+			   "${line}" \
+			   "c1" \
+			   "true" \
+			   "%Y-%M-%d"
 	# usaa
     elif [[ "${filename}" =~ ^bk_download.*\.csv$ ]]; then
 	echo "usaa"
+	handle_single_file "${TMP_DIR}/usaa" \
+			   "${OUTPUT_DIR}/usaa" \
+			   "${RULESETS_DIR}" \
+			   "${line}" \
+			   "usaa" \
+			   "false" \
+			   "%M/%d/%Y"
 	# bank of america
     elif [[ "${filename}" =~ ^.*[0-9]{4}_[0-9]{4}\.csv$ ]] &&
-	     [ "${title}" = \
-			  "Posted Date,Reference Number,Payee,Address,Amount" ]; then
+	     [ "${title}" \
+		   = "Posted Date,Reference Number,Payee,Address,Amount" ]; then
 	echo "boa"
-    fi    
+	handle_single_file "${TMP_DIR}/boa" \
+			   "${OUTPUT_DIR}/boa" \
+			   "${RULESETS_DIR}" \
+			   "${line}" \
+			   "boa" \
+			   "true" \
+			   "%M/%d/%Y"
+    fi
 done
+
+# 5. merge all clean files from various financial sources into a single
+#    unified file
+for file in $(find "${TMP_DIR}" -type f); do
+    cat "${file}" >> "${MERGE_FILE}"
+done
+
+# 6. sort the single file by date (1st column)
+sort --reverse "${MERGE_FILE}" > "${MERGE_FILE}.sorted"
+
+# 7. cut the file up into monthly files starting and ending within the
+#    month (to remove the problem of various statements starting and
+#    ending at different times)
+# 8. for each monthly file apply the category rulesets
 
 # Clean up!
 # rm -rf "${TMP_DIR}"

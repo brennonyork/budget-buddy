@@ -36,25 +36,25 @@ FINANCE_SOURCES=("c1" "boa" "chase" "usaa")
 column_transform() {
     case "${1}" in
 	"c1")
-	    # Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit
 	    cut -d, -f2,4-7 "${2}" | \
+		sed '/^[[:space:]]*$/d' | \
 		awk -F',' '{
 			    printf $1","$2","$3","; 
        			    if ( $5 == "" ) { print -$4 } else { print $5 }
 			   }' > "${3}"
 	    ;;
 	"chase")
-	    # Transaction Date,Post Date,Description,Category,Type,Amount
-	    cut -d, -f2-4,6 "${2}" > "${3}"
+	    cut -d, -f2-4,6 "${2}" | \
+		sed '/^[[:space:]]*$/d' > "${3}"
 	    ;;
 	"boa")
-	    # Posted Date,Reference Number,Payee,Address,Amount
 	    cut -d, -f1,3,5 "${2}" | \
+		sed '/^[[:space:]]*$/d' | \
 		awk -F',' '{ print $1","$2",,"$3 }' > "${3}"
 	    ;;
 	"usaa")
-	    # Columns not defined
 	    cut -d, -f3,5-7 "${2}" | \
+		sed '/^[[:space:]]*$/d' | \
 		awk -F',' '{
                             printf $1","$2","$3",";
                             if ( substr($4, 1, 2) == "--" ) { 
@@ -69,27 +69,28 @@ column_transform() {
 }
 
 # Arg1 - file to remove first line from
+# Ret  - absolute path to 'cleaned' file name
 remove_first_line_in_file() {
-    tail -n +2 "${1}" > "${1}.clean"
+    clean_file="${1}.clean"
+    tail -n +2 "${1}" > "${clean_file}"
+    rm "${1}"
+    echo "${clean_file}"
 }
 
 # Arg1 - column-normalized file to read date from
+# Arg2 - parse string for the input date format
 # Ret  - return max posted date from the file
 determine_date_from_file() {
-    echo $(cut -d, -f1 "${1}" |  head -1 | xargs | sed 's/\//-/g')
-}
-
-# Arg1 - short form abbreviation for the finance source we wish
-#        to transform
-# TODO: determine extension X
-# Checks for a file with extension X in the local directory of
-# this script which should contain the rulesets for that financial
-# source - Arg1 - and, if not present, exit the program in error
-_check_for_ruleset_file() {
-    if [ ! -f "$1" ]; then
-	echo "ERROR: No ruleset file for $1"
-	exit 3
-    fi
+    date_from_file=$(cut -d, -f1 "${1}" | head -1 | xargs)
+    awk -F',' -v date_fmt="${2}" \
+	'{
+          cmd="date -j -f "date_fmt" "$1" +%Y-%M-%d";
+          cmd | getline mydate;
+          print mydate","$2","$3","$4;
+          close(cmd);
+         }' "${1}" > "${1}.awk"
+    mv "${1}.awk" "${1}"
+    echo $(date -j -f "${2}" "${date_from_file}" +"%Y-%M-%d")
 }
 
 # Arg1 - short form abbreviation for the finance source we wish
@@ -111,17 +112,35 @@ ruleset_transform() {
 # Arg2 - output directory
 # Arg3 - ruleset directory
 # Arg4 - full path of the input file to operate on
-# Arg5 - determined financial source 
+# Arg5 - determined financial source
+# Arg6 - boolean "true" or "false" to determine if we remove the
+#        first line (header) or not
+# Arg7 - input parse string for the posted transaction date format
 #
 # Operates all necessary functions on a single file after it's been
-# determined what financial source it came from
+# determined what financial source it came from.
+#
+# Handles operations in this order:
+# 1. 'transform' the columns to be in the correct order and only
+#    containing the columns needed
+# 2. remove the header from the file (if it exists)
+# 3. determine the maximum date from the file
+# 4. use the maximum date to rename the file so we can avoid
+#    naming conflicts after we've processed, useful given statements
+#    all start at different dates. this program *does not* dedupe
+#    individual transactions therefore needs to ensure we process each
+#    record exactly once and max date matches each statement
 handle_single_file() {
     filename="$(basename ${4})"
     tmp_file="${1}/${filename}"
+    clean_file=""
     
     column_transform "${5}" "${4}" "${tmp_file}"
-    remove_first_line_in_file "${tmp_file}"
-    date_file=$(determine_date_from_file "${tmp_file}.clean")
-    mv "${tmp_file}" "${1}/${date_file}.txt"
-    ruleset_transform "${5}" "${tmp_file}" "${2}" "${3}"
+    if [ "${6}" = "true" ]; then
+	clean_file=$(remove_first_line_in_file "${tmp_file}")
+    else
+	clean_file="${tmp_file}"
+    fi
+    max_date=$(determine_date_from_file "${clean_file}" "${7}")
+    mv "${clean_file}" "${1}/${max_date}.csv"
 }
