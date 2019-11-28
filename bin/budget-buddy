@@ -63,13 +63,6 @@ while (( "$#" )); do
     esac
 done
 
-# Really bad/sad way to check if an element is in a bash array :(
-for fin_src in "${FINANCE_SOURCES[@]}"; do
-    if [ "${FIN_SRC_PROVIDED}" = "${fin_src}" ]; then
-	FIN_SRC_PRESENT=1
-    fi
-done
-
 mkdir -p "${TMP_DIR}"
 mkdir -p "${OUTPUT_DIR}"
 
@@ -77,21 +70,23 @@ for fin_src in "${FINANCE_SOURCES[@]}"; do
     mkdir -p "${TMP_DIR}/${fin_src}"
 done
 
-for line in $(find "${SEARCH_DIR}" -type f); do
+find "${SEARCH_DIR}" -type f | \
+    while read line; do
     # grab the filename from the absolute path
     filename="$(basename ${line})"
     # grab the first line from the file and trim non-ascii chars
-    title="$(head -1 $line | tr -d '[:cntrl:]')"
+    title="$(head -1 $line 2>/dev/null | tr -d '[:cntrl:]' 2>/dev/null)"
+
+    [ ! "${VERBOSE}" = "" ] && printf "Processing file - ${line}\n"
     
     # we can't use case statements w/regex so we run multi-line
     # if statements :grimace:
-
     # lets start w chase
     if [[ "${filename}" \
 	      =~ ^Chase[0-9]{4}_Activity.*\.CSV$ ]] &&
 	   [ "${title}" \
 		 = "Transaction Date,Post Date,Description,Category,Type,Amount" ]; then
-	echo "chase"
+	[ ! "${VERBOSE}" = "" ] && printf "Chase file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/chase" \
 			   "${OUTPUT_DIR}/chase" \
 			   "${RULESETS_DIR}" \
@@ -104,7 +99,8 @@ for line in $(find "${SEARCH_DIR}" -type f); do
 		=~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_transaction_download.* ]] &&
 	     [ "${title}" \
 		   = "Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit" ]; then
-	echo "capital one"
+	[ ! "${VERBOSE}" = "" ] && \
+	    printf "Capital One file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/c1" \
 			   "${OUTPUT_DIR}/c1" \
 			   "${RULESETS_DIR}" \
@@ -114,7 +110,7 @@ for line in $(find "${SEARCH_DIR}" -type f); do
 			   "%Y-%M-%d"
 	# usaa
     elif [[ "${filename}" =~ ^bk_download.*\.csv$ ]]; then
-	echo "usaa"
+	[ ! "${VERBOSE}" = "" ] && printf "USAA file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/usaa" \
 			   "${OUTPUT_DIR}/usaa" \
 			   "${RULESETS_DIR}" \
@@ -126,7 +122,8 @@ for line in $(find "${SEARCH_DIR}" -type f); do
     elif [[ "${filename}" =~ ^.*[0-9]{4}_[0-9]{4}\.csv$ ]] &&
 	     [ "${title}" \
 		   = "Posted Date,Reference Number,Payee,Address,Amount" ]; then
-	echo "boa"
+	[ ! "${VERBOSE}" = "" ] && \
+	    printf "Bank Of America file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/boa" \
 			   "${OUTPUT_DIR}/boa" \
 			   "${RULESETS_DIR}" \
