@@ -25,12 +25,12 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
 # Staging (temporary), output, and ruleset directories
 TMP_DIR="${DIR}/../tmp"
 OUTPUT_DIR="${DIR}/../output"
-RULESETS_DIR="${DIR}/../rulesets"
 MERGE_FILE="${TMP_DIR}/merged.csv"
 
 # Settings that can be set through the command line
 VERBOSE=""
 SEARCH_DIR=""
+RULESET_FILE=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -56,12 +56,22 @@ while (( "$#" )); do
 	    SEARCH_DIR="${2}"
 	    shift 2
 	    ;;
+	"-r" | "--ruleset")
+	    RULESET_FILE="${2}"
+	    shift 2
+	    ;;
 	*)
 	    printf "WARN: Unrecognized option ${1}\n"
 	    shift
 	    ;;
     esac
 done
+
+if [ "${SEARCH_DIR}" = "" ] || \
+       [ "${RULESET_FILE}" = "" ]; then
+    printf "ERROR: did not provide ruleset file or search directory\n"
+    exit 1
+fi
 
 mkdir -p "${TMP_DIR}"
 mkdir -p "${OUTPUT_DIR}"
@@ -89,7 +99,6 @@ find "${SEARCH_DIR}" -type f | \
 	[ ! "${VERBOSE}" = "" ] && printf "Chase file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/chase" \
 			   "${OUTPUT_DIR}/chase" \
-			   "${RULESETS_DIR}" \
 			   "${line}" \
 			   "chase" \
 			   "true" \
@@ -103,7 +112,6 @@ find "${SEARCH_DIR}" -type f | \
 	    printf "Capital One file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/c1" \
 			   "${OUTPUT_DIR}/c1" \
-			   "${RULESETS_DIR}" \
 			   "${line}" \
 			   "c1" \
 			   "true" \
@@ -113,7 +121,6 @@ find "${SEARCH_DIR}" -type f | \
 	[ ! "${VERBOSE}" = "" ] && printf "USAA file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/usaa" \
 			   "${OUTPUT_DIR}/usaa" \
-			   "${RULESETS_DIR}" \
 			   "${line}" \
 			   "usaa" \
 			   "false" \
@@ -126,7 +133,6 @@ find "${SEARCH_DIR}" -type f | \
 	    printf "Bank Of America file found: ${filename}\n"
 	handle_single_file "${TMP_DIR}/boa" \
 			   "${OUTPUT_DIR}/boa" \
-			   "${RULESETS_DIR}" \
 			   "${line}" \
 			   "boa" \
 			   "true" \
@@ -150,7 +156,7 @@ mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 split_files_by_month "${MERGE_FILE}" "${OUTPUT_DIR}"
 
 # 8. for each monthly file apply the category rulesets
-ruleset_transform "${RULESETS_DIR}"
+ruleset_transform "${RULESET_FILE}"
 
 # Clean up!
 rm -rf "${TMP_DIR}"

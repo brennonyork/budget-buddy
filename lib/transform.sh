@@ -112,17 +112,16 @@ normalize_date() {
 ruleset_transform() {
     while read line; do 
 	echo $line
-    done < "${1}/ruleset.txt"
+    done < "${1}"
 }
 
 # Arg1 - temporary directory
 # Arg2 - output directory
-# Arg3 - ruleset directory
-# Arg4 - full path of the input file to operate on
-# Arg5 - determined financial source
-# Arg6 - boolean "true" or "false" to determine if we remove the
+# Arg3 - full path of the input file to operate on
+# Arg4 - determined financial source
+# Arg5 - boolean "true" or "false" to determine if we remove the
 #        first line (header) or not
-# Arg7 - input parse string for the posted transaction date format
+# Arg6 - input parse string for the posted transaction date format
 #
 # Operates all necessary functions on a single file after it's been
 # determined what financial source it came from.
@@ -138,17 +137,17 @@ ruleset_transform() {
 #    individual transactions therefore needs to ensure we process each
 #    record exactly once and max date matches each statement
 handle_single_file() {
-    filename="$(basename ${4})"
+    filename="$(basename ${3})"
     tmp_file="${1}/${filename}"
     clean_file=""
     
-    column_transform "${5}" "${4}" "${tmp_file}"
-    if [ "${6}" = "true" ]; then
+    column_transform "${4}" "${3}" "${tmp_file}"
+    if [ "${5}" = "true" ]; then
 	clean_file=$(remove_first_line_in_file "${tmp_file}")
     else
 	clean_file="${tmp_file}"
     fi
-    normalize_date "${clean_file}" "${7}"
+    normalize_date "${clean_file}" "${6}"
     max_date=$(max_date_from_file "${clean_file}")
     mv "${clean_file}" "${1}/${max_date}.csv"
 }
