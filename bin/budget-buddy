@@ -153,10 +153,10 @@ mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 # 7. cut the file up into monthly files starting and ending within the
 #    month (to remove the problem of various statements starting and
 #    ending at different times)
-split_files_by_month "${MERGE_FILE}" "${OUTPUT_DIR}"
+split_file_by_month "${MERGE_FILE}" "${OUTPUT_DIR}"
 
 # 8. for each monthly file apply the category rulesets
-ruleset_transform "${RULESET_FILE}"
+ruleset_transform "${RULESET_FILE}" "${OUTPUT_DIR}"
 
 # Clean up!
 rm -rf "${TMP_DIR}"

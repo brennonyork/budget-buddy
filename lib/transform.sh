@@ -105,6 +105,7 @@ normalize_date() {
 }
 
 # Arg1 - ruleset directory that contains all rulesets
+# Arg2 - directory where all monthly, clean files are located
 #
 # Transforms a given file - Arg2 - into the column set form below
 # with the rulesets written and applied for the given financial
@@ -154,7 +155,7 @@ handle_single_file() {
 
 # Arg1 - the fully merged and sorted set of transactions
 # Arg2 - output directory to put monthly files into
-split_files_by_month() {
+split_file_by_month() {
     max_date=$(max_date_from_file "${1}")
     max_year=$(echo "${max_date}" | cut -d- -f1)
     max_month=$(echo "${max_date}" | cut -d- -f2)
