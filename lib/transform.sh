@@ -50,6 +50,8 @@ column_transform() {
 	"boa")
 	    cut -d, -f1,3,5 "${2}" | \
 		sed '/^[[:space:]]*$/d' | \
+		sed 's/,"/,/g' | \
+		sed 's/",/,/g' | \
 		awk -F',' '{ print $1","$2",,"$3 }' > "${3}"
 	    ;;
 	"usaa")
@@ -78,10 +80,20 @@ remove_first_line_in_file() {
 }
 
 # Arg1 - column-normalized file to read date from
-# Arg2 - parse string for the input date format
 # Ret  - return max posted date from the file
-determine_date_from_file() {
-    date_from_file=$(cut -d, -f1 "${1}" | head -1 | xargs)
+max_date_from_file() {
+    echo $(cut -d, -f1 "${1}" | head -1 | xargs)
+}
+
+# Arg1 - column-normalized file to read date from
+# Ret  - return minimum posted date from the file
+min_date_from_file() {
+    echo $(cut -d, -f1 "${1}" | tail -1 | xargs)
+}
+
+# Arg1 - column-normalized file to read date from
+# Arg2 - parse string for the input date format
+normalize_date() {
     awk -F',' -v date_fmt="${2}" \
 	'{
           cmd="date -j -f "date_fmt" "$1" +%Y-%M-%d";
@@ -90,14 +102,9 @@ determine_date_from_file() {
           close(cmd);
          }' "${1}" > "${1}.awk"
     mv "${1}.awk" "${1}"
-    echo $(date -j -f "${2}" "${date_from_file}" +"%Y-%M-%d")
 }
 
-# Arg1 - short form abbreviation for the finance source we wish
-#        to transform
-# Arg2 - file to apply the transforms to
-# Arg3 - output file name to place results into
-# Arg4 - ruleset directory that contains all rulesets
+# Arg1 - ruleset directory that contains all rulesets
 #
 # Transforms a given file - Arg2 - into the column set form below
 # with the rulesets written and applied for the given financial
@@ -105,7 +112,7 @@ determine_date_from_file() {
 ruleset_transform() {
     while read line; do 
 	echo $line
-    done < "${4}/${1}.txt"
+    done < "${1}/ruleset.txt"
 }
 
 # Arg1 - temporary directory
@@ -141,6 +148,28 @@ handle_single_file() {
     else
 	clean_file="${tmp_file}"
     fi
-    max_date=$(determine_date_from_file "${clean_file}" "${7}")
+    normalize_date "${clean_file}" "${7}"
+    max_date=$(max_date_from_file "${clean_file}")
     mv "${clean_file}" "${1}/${max_date}.csv"
+}
+
+# Arg1 - the fully merged and sorted set of transactions
+# Arg2 - output directory to put monthly files into
+split_files_by_month() {
+    max_date=$(max_date_from_file "${1}")
+    max_year=$(echo "${max_date}" | cut -d- -f1)
+    max_month=$(echo "${max_date}" | cut -d- -f2)
+    
+    min_date=$(min_date_from_file "${1}")
+    min_year=$(echo "${min_date}" | cut -d- -f1)
+    min_month=$(echo "${min_date}" | cut -d- -f2)
+
+    for month in $(seq -f"%02g" "${min_month}" "${max_month}"); do
+	for year in $(seq "${min_year}" "${max_year}"); do
+	    grep "^${year}-${month}" "${1}" >/dev/null
+	    if [ "$?" = "0" ]; then
+		grep "^${year}-${month}" "${1}" > "${2}/${year}-${month}.csv"
+	    fi
+	done
+    done
 }
