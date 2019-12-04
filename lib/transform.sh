@@ -104,15 +104,29 @@ normalize_date() {
     mv "${1}.awk" "${1}"
 }
 
-# Arg1 - ruleset directory that contains all rulesets
+# Arg1 - ruleset file that contains all rulesets
 # Arg2 - directory where all monthly, clean files are located
 #
 # Transforms a given file - Arg2 - into the column set form below
 # with the rulesets written and applied for the given financial
 # source - Arg1
 ruleset_transform() {
-    while read line; do 
-	echo $line
+    while read ruleset_line; do
+	for file in $(find "${2}" -type f); do
+	    echo $ruleset_line >&2
+	    category="$(echo "${ruleset_line}" | cut -d',' -f1 | xargs)"
+	    pattern="$(echo "${ruleset_line}" | cut -d',' -f2- | xargs)"
+	    awk -F',' \
+		-v pattern="${pattern}" \
+		-v category="${category}" \
+		'{
+  		      if ( $2 ~ pattern ) {
+                        print "got coffee";
+              	      } else {
+                        print $1","$2","$3","$4
+                      }
+                 }' "${file}" > "${file}.awk"
+	done
     done < "${1}"
 }
 
