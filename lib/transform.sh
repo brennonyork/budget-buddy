@@ -121,11 +121,12 @@ ruleset_transform() {
 		-v category="${category}" \
 		'{
   		      if ( $2 ~ pattern ) {
-                        print "got coffee";
+                        print $1","$2","category","$4
               	      } else {
                         print $1","$2","$3","$4
                       }
                  }' "${file}" > "${file}.awk"
+	    mv "${file}.awk" "${file}" 
 	done
     done < "${1}"
 }
