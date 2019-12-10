@@ -31,6 +31,7 @@ MERGE_FILE="${TMP_DIR}/merged.csv"
 VERBOSE=""
 SEARCH_DIR=""
 RULESET_FILE=""
+SPLIT_BY_MONTH=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -59,6 +60,10 @@ while (( "$#" )); do
 	"-r" | "--ruleset")
 	    RULESET_FILE="${2}"
 	    shift 2
+	    ;;
+	"-s" | "--split")
+	    SPLIT_BY_MONTH="1"
+	    shift
 	    ;;
 	*)
 	    printf "WARN: Unrecognized option ${1}\n"
@@ -150,13 +155,17 @@ done
 sort --reverse "${MERGE_FILE}" > "${MERGE_FILE}.sorted"
 mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 
-# 7. cut the file up into monthly files starting and ending within the
-#    month (to remove the problem of various statements starting and
-#    ending at different times)
-split_file_by_month "${MERGE_FILE}" "${OUTPUT_DIR}"
+# 7. for each monthly file apply the category rulesets
+ruleset_transform "${RULESET_FILE}" "${MERGE_FILE}"
 
-# 8. for each monthly file apply the category rulesets
-ruleset_transform "${RULESET_FILE}" "${OUTPUT_DIR}"
+# 8. cut the file up into monthly files starting and ending within the
+#    month (to remove the problem of various statements starting and
+#    ending at different times) if denoted on the command line
+if [ ! "${SPLIT_BY_MONTH}" == "" ]; then
+    split_file_by_month "${MERGE_FILE}" "${OUTPUT_DIR}"
+else
+    mv "${MERGE_FILE}" "${OUTPUT_DIR}/output.csv"
+fi
 
 # Clean up!
 rm -rf "${TMP_DIR}"

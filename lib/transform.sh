@@ -105,30 +105,29 @@ normalize_date() {
 }
 
 # Arg1 - ruleset file that contains all rulesets
-# Arg2 - directory where all monthly, clean files are located
+# Arg2 - cleaned, sorted single file with all transactions
 #
 # Transforms a given file - Arg2 - into the column set form below
 # with the rulesets written and applied for the given financial
 # source - Arg1
 ruleset_transform() {
     while read ruleset_line; do
-	for file in $(find "${2}" -type f); do
-	    echo $ruleset_line >&2
-	    category="$(echo "${ruleset_line}" | cut -d',' -f1 | xargs)"
-	    pattern="$(echo "${ruleset_line}" | cut -d',' -f2- | xargs)"
-	    awk -F',' \
-		-v pattern="${pattern}" \
-		-v category="${category}" \
-		'{
-  		      if ( $2 ~ pattern ) {
-                        print $1","$2","category","$4
-              	      } else {
-                        print $1","$2","$3","$4
-                      }
-                 }' "${file}" > "${file}.awk"
-	    mv "${file}.awk" "${file}" 
-	done
+	echo "${ruleset_line}" >&2
+	category="$(echo "${ruleset_line}" | cut -d',' -f1 | xargs)"
+	pattern="$(echo "${ruleset_line}" | cut -d',' -f2-)"
+	echo "pattern: ${pattern}" >&2
+	awk -F',' \
+	    -v pattern="${pattern}" \
+	    -v category="${category}" \
+	    '{
+       	      if ( $2 ~ pattern ) {
+                  print $1","$2","category","$4
+              } else {
+                  print "pattern "pattern" failed: "$1","$2","$3","$4
+              }
+             }' "${2}" >> "${2}.awk"
     done < "${1}"
+    mv "${2}.awk" "${2}"
 }
 
 # Arg1 - temporary directory
