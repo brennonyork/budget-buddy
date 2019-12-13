@@ -156,7 +156,7 @@ sort --reverse "${MERGE_FILE}" > "${MERGE_FILE}.sorted"
 mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 
 # 7. for each monthly file apply the category rulesets
-ruleset_transform "${RULESET_FILE}" "${MERGE_FILE}"
+ruleset_transform_beta "${RULESET_FILE}" "${MERGE_FILE}"
 
 # 8. cut the file up into monthly files starting and ending within the
 #    month (to remove the problem of various statements starting and

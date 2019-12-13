@@ -130,6 +130,29 @@ ruleset_transform() {
     mv "${2}.awk" "${2}"
 }
 
+ruleset_transform_beta() {
+    while read ruleset_line; do
+	echo "${ruleset_line}" >&2
+	category="$(echo "${ruleset_line}" | cut -d',' -f1 | xargs)"
+	pattern="$(echo "${ruleset_line}" | cut -d',' -f2-)"
+	echo "pattern: ${pattern}" >&2
+	cat "${2}" | python -c "
+import re
+import sys
+
+category, pattern = map(lambda x: x.strip(), \"${ruleset_line}\".split(','))
+
+print(category, pattern)
+for line in sys.stdin:
+    d, m, c, p = line.split(',', 4)
+    if(re.match(pattern, m)):
+        sys.stdout.write(d+','+m+','+category+','+p)
+    else:
+        sys.stdout.write(d+','+m+','+c+','+p)" >> "${2}.pyout"
+    done < "${1}"
+    mv "${2}.pyout" "${2}"
+}
+
 # Arg1 - temporary directory
 # Arg2 - output directory
 # Arg3 - full path of the input file to operate on
