@@ -40,7 +40,7 @@ print(rule_map)
 with open(merge_file, 'r') as transactions:
     for transaction in transactions:
         d, m, c, p = map(lambda x: x.strip(), transaction.split(',', 4))
-        regex_matches = list(map(lambda x: re.match(x, m),
+        regex_matches = list(map(lambda x: re.search(x, m),
                                  map(lambda y: y[1],
                                      rule_map)))
         
@@ -48,7 +48,7 @@ with open(merge_file, 'r') as transactions:
             # find longest match by taking the second element from the
             # `span` regex method thus returning the length of the match as
             # well as the index
-            longest_match = max([[i, j.span()[1]] for i, j in enumerate(regex_matches) if j],
+            longest_match = max([[i, j.span()[1]-j.span()[0]] for i, j in enumerate(regex_matches) if j],
                                 key=lambda x: x[1])
             
             # pull the new category by taking the index from the longest

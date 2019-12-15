@@ -23,6 +23,35 @@ budget-buddy creates an output file inside the `output/` directory, lovingly
 called `output.csv`, which will then contain a merged, sorted, list of all
 one's financial transactions.
 
+## Output File
+
+The output file consists of 4 columns:
+
+1. *Transaction Post Date* - This is the date the transaction was posted to
+the account. This *is not* the date the transaction happened. Unfortunately
+not all financial sources provide the date the transaction happened as well
+as the posted date, so we only use posted date.
+2. *Merchant String* - This is the string that comes through for describing
+the merchant of the transaction. Some financial institutions might attempt to
+clean this string, other won't and can look quite confusing.
+3. *Category* - This is the financial (or user) supplied category for the
+given transaction. If the user supplies a ruleset file then this category
+could be provided from a match in that file. Alternatively this could be
+blank if a given financial institution doesn't provide categorization (some
+don't).
+4. *Price* - The price of this transaction. Prices are negative if they're
+debits and positive if they're credits to the account.
+
+## Financial Sources Supported
+
+Currently, with hacky bash scripting, budget-buddy can reasonably detect and
+supports files from:
+
+* Chase
+* USAA
+* Capital One
+* Bank of America
+
 # Categorization
 
 One of the powerful utilities budget-buddy has is the ability to apply a
@@ -34,6 +63,34 @@ individuals the power to create categories meaningful to them based on
 intuitive rule logic (regexes) and apply them to all their transactions.
 This creates a foundation for further tooling, etc to be used / built
 to provide details about how individuals spend their money.
+
+## Ruleset File Layout
+
+The ruleset file is in csv format with 2 columns. The first is the category
+to apply *iff* the regex matches. The second column is the Python-based regex
+to apply against the merchant string to check for a match. Comments can be
+placed in the file with the `#` character.
+
+The core of the matching comes from the Python `re.search()` function. If a
+merchant string matches multiple regexes then the longest match will apply.
+
+For example:
+```
+ $ cat rules.csv
+ > Food & Drink, ^SQ \*
+ > Coffee, ^SQ \*FIFTY/FIFTY$
+```
+
+We are first stating that all transactions through Square
+(eg the "SQ *<some restaurant>" pattern) should be matched and apply the
+"Food & Drink" category. However, if we find a transaction such as
+"SQ *FIFTY/FIFTY" explicitly then we should apply the label "Coffee".
+"Coffee" would be the correct label applied because the "SQ \*" would only
+match up to a length of 4 while the latter would match 15 characters, thus
+applying the longer match.
+
+More details and examples can be found in the comments of the
+`rules.example` file.
 
 # Why create this?
 
