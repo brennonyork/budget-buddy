@@ -1,10 +1,27 @@
 #!/usr/bin/env python3
 
+# Arg1 - ruleset file that contains all rulesets
+# Arg2 - cleaned, sorted single file with all transactions
+#
+# Transforms a given file - Arg2 - into the column set form below
+# with the rulesets written and applied for the given financial
+# source - Arg1
+
 import re
 import sys
 
+if len(sys.argv) < 3:
+    print("ERROR: need to supply a ruleset file and transaction file")
+    exit()
+
 ruleset_file = sys.argv[1]
 merge_file   = sys.argv[2]
+incl_history = None
+
+# if extra arg passed then we include the historical transaction before
+# we change it w the ruleset regexs
+if len(sys.argv) == 4:
+    incl_history = sys.argv[3]
 
 rule_map = []
 
@@ -15,15 +32,28 @@ with open(ruleset_file, 'r') as rules:
 
 with open(merge_file, 'r') as transactions:
     for transaction in transactions:
-        d, m, c, p = transaction.split(',', 4)
+        d, m, c, p = map(lambda x: x.strip(), transaction.split(',', 4))
         regex_matches = list(map(lambda x: re.match(x, m),
                                  map(lambda y: y[1],
                                      rule_map)))
-        match_indices = [i for i, j in enumerate(regex_matches) if j]
+        
+        if any(regex_matches):
+            # find longest match by taking the second element from the
+            # `span` regex method thus returning the length of the match as
+            # well as the index
+            longest_match = max([[i, j.span()[1]] for i, j in enumerate(regex_matches) if j],
+                                key=lambda x: x[1])
+            
+            # pull the new category by taking the index from the longest
+            # match, looking up that index in the rule_map, and then taking
+            # the first element from that list (ie the category, not the
+            # regex assigned to that category label)
+            new_category = rule_map[longest_match[0]][0]
 
-        # right now first match wins
-        # TODO: make it so *longest* match wins
-        if any(match_indices):
-            sys.stdout.write(d+','+m+','+rule_map[match_indices[0]][0]+','+p)
+            if incl_history:
+                if not(c): c = "Empty"
+                sys.stdout.write(d+','+m+','+new_category+','+p+','+c+'\n')
+            else:
+                sys.stdout.write(d+','+m+','+new_category+','+p+'\n')
         else:
-            sys.stdout.write(d+','+m+','+c+','+p)
+            sys.stdout.write(d+','+m+','+c+','+p+'\n')
