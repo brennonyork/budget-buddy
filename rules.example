@@ -1,0 +1,13 @@
+# if you ever want to debug or test a regex, check out this site
+# - <site>
+
+# matches all Square payments and changes the category to "Food & Drink" with
+# a match length of 4
+Food & Drink, ^SQ \*
+
+# overrides the above rule for the explicit transaction case of "SQ *FIFTY/FIFTY" and
+# applies the "Coffee" category (match len of 15)
+Coffee, ^SQ \*FIFTY/FIFTY$
+
+# matches any transaction w coffee in it (match len of 6)
+Coffee, [c|C][o|O][f|F][f|F][e|E][e|E] # comments can go inline to the file as well

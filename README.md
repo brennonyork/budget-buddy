@@ -89,6 +89,9 @@ We are first stating that all transactions through Square
 match up to a length of 4 while the latter would match 15 characters, thus
 applying the longer match.
 
+In a worst case where multiple matches are of equal length it would apply
+the first rule in the file.
+
 More details and examples can be found in the comments of the
 `rules.example` file.
 
