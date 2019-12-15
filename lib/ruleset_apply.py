@@ -27,9 +27,16 @@ rule_map = []
 
 with open(ruleset_file, 'r') as rules:
     for rule in rules:
-        category, regex = map(lambda x: x.strip(), rule.split(','))
-        rule_map.append([category, regex])
+        # if the line starts with a '#' character then skip the line
+        if rule[0] == '#':
+            continue
+        else:
+            # else split by a '#' if it exists and take everything before it
+            category, regex = map(lambda x: x.strip(), rule.split('#')[0].split(','))
+            rule_map.append([category, regex])
 
+print(rule_map)
+        
 with open(merge_file, 'r') as transactions:
     for transaction in transactions:
         d, m, c, p = map(lambda x: x.strip(), transaction.split(',', 4))
