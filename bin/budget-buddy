@@ -22,7 +22,7 @@
 # - from https://stackoverflow.com/a/246128
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
 
-# Staging (temporary), output, and ruleset directories
+# Staging (temporary), output, and merged file name
 TMP_DIR="${DIR}/../tmp"
 OUTPUT_DIR="${DIR}/../output"
 MERGE_FILE="${TMP_DIR}/merged.csv"
@@ -32,6 +32,7 @@ VERBOSE=""
 SEARCH_DIR=""
 RULESET_FILE=""
 SPLIT_BY_MONTH=""
+INCL_HISTORY=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -46,7 +47,7 @@ if [ "${1}" = "--help" ] || [ "${1}" = "-h" ]; then
 fi
 
 # Command line parser
-#   $ budget-buddy [ opts ] -f <file> -n <finance source>
+#   $ budget-buddy [ opts ] -d <directory> -r <ruleset-file>
 while (( "$#" )); do
     case "${1}" in
 	"-v" | "--verbose")
@@ -65,6 +66,10 @@ while (( "$#" )); do
 	    SPLIT_BY_MONTH="1"
 	    shift
 	    ;;
+	"-h" | "--history")
+	    INCL_HISTORY="1"
+	    shift
+	    ;;
 	*)
 	    printf "WARN: Unrecognized option ${1}\n"
 	    shift
@@ -72,9 +77,8 @@ while (( "$#" )); do
     esac
 done
 
-if [ "${SEARCH_DIR}" = "" ] || \
-       [ "${RULESET_FILE}" = "" ]; then
-    printf "ERROR: did not provide ruleset file or search directory\n"
+if [ "${SEARCH_DIR}" = "" ]; then
+    printf "ERROR: did not provide search directory, '-h' for help.\n"
     exit 1
 fi
 
@@ -155,8 +159,14 @@ done
 sort --reverse "${MERGE_FILE}" > "${MERGE_FILE}.sorted"
 mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 
-# 7. for each monthly file apply the category rulesets
-python "${DIR}/../lib/ruleset_apply.py" "${RULESET_FILE}" "${MERGE_FILE}" "1"
+# 7. apply the ruleset patterns across the unified file
+if [ ! "${RULESET_FILE}" = "" ]; then
+    if [ ! "${INCL_HISTORY}" = "" ]; then
+	python "${DIR}/../lib/ruleset_apply.py" "${RULESET_FILE}" "${MERGE_FILE}" "${INCL_HISTORY}"
+    else
+	python "${DIR}/../lib/ruleset_apply.py" "${RULESET_FILE}" "${MERGE_FILE}"
+    fi
+fi
 
 # 8. cut the file up into monthly files starting and ending within the
 #    month (to remove the problem of various statements starting and
