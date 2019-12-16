@@ -3,10 +3,10 @@
 An alternate financial tracking platform made for command-line competent
 individuals to easily merge financial statements from various providers.
 
-* *sort, merge, and unify* your financial statements
-* apply rules to *simplify categorization* of individual transactions
-* split transaction history for easy *month-over-month spend comparisons*
-* *no logins, no personal info needed* - your data stays with you
+* **sort, merge, and unify** your financial statements
+* apply rules to **simplify categorization** of individual transactions
+* split transaction history for easy **month-over-month spend comparisons**
+* **no logins, no personal info needed** - your data stays with you
 
 # Usage
 
