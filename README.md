@@ -27,19 +27,19 @@ one's financial transactions.
 
 The output file consists of 4 columns:
 
-1. *Transaction Post Date* - This is the date the transaction was posted to
+1. **Transaction Post Date** - This is the date the transaction was posted to
 the account. This *is not* the date the transaction happened. Unfortunately
 not all financial sources provide the date the transaction happened as well
 as the posted date, so we only use posted date.
-2. *Merchant String* - This is the string that comes through for describing
+2. **Merchant String** - This is the string that comes through for describing
 the merchant of the transaction. Some financial institutions might attempt to
 clean this string, other won't and can look quite confusing.
-3. *Category* - This is the financial (or user) supplied category for the
+3. **Category** - This is the financial (or user) supplied category for the
 given transaction. If the user supplies a ruleset file then this category
 could be provided from a match in that file. Alternatively this could be
 blank if a given financial institution doesn't provide categorization (some
 don't).
-4. *Price* - The price of this transaction. Prices are negative if they're
+4. **Price** - The price of this transaction. Prices are negative if they're
 debits and positive if they're credits to the account.
 
 ## Financial Sources Supported
@@ -118,7 +118,7 @@ it runs through your entire financial history (because honestly it isn't
 that big) allowing you to backfill transactions, change category labels, or
 add new financial sources.
 
-*budget-buddy doesn't require your personal info,
+**budget-buddy doesn't require your personal info,
 it doesn't require a login, and it won't ever contact you about trying to
 take a fee to help you manage your finances better. And, best of
-all, its free.*
+all, its free.**
