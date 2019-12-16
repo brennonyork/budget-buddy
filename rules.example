@@ -1,5 +1,5 @@
 # if you ever want to debug or test a regex, check out this site
-# - <site>
+# - https://www.debuggex.com/
 
 # matches all Square payments and changes the category to "Food & Drink" with
 # a match length of 4
