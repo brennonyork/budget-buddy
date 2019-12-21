@@ -162,10 +162,16 @@ mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 # 7. apply the ruleset patterns across the unified file
 if [ ! "${RULESET_FILE}" = "" ]; then
     if [ ! "${INCL_HISTORY}" = "" ]; then
-	python "${DIR}/../lib/ruleset_apply.py" "${RULESET_FILE}" "${MERGE_FILE}" "${INCL_HISTORY}"
+	python "${DIR}/../lib/ruleset_apply.py" \
+	       "${RULESET_FILE}" \
+	       "${MERGE_FILE}" \
+	       "${INCL_HISTORY}" > "${MERGE_FILE}.rules"
     else
-	python "${DIR}/../lib/ruleset_apply.py" "${RULESET_FILE}" "${MERGE_FILE}"
+	python "${DIR}/../lib/ruleset_apply.py" \
+	       "${RULESET_FILE}" \
+	       "${MERGE_FILE}" > "${MERGE_FILE}.rules"
     fi
+    mv "${MERGE_FILE}.rules" "${MERGE_FILE}"
 fi
 
 # 8. cut the file up into monthly files starting and ending within the
