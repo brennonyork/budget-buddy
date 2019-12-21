@@ -27,8 +27,8 @@ rule_map = []
 
 with open(ruleset_file, 'r') as rules:
     for rule in rules:
-        # if the line starts with a '#' character then skip the line
-        if rule[0] == '#':
+        # if its only a newline we skip it or if the line starts with a '#' character then skip the line
+        if rule == "\n" or rule[0] == '#':
             continue
         else:
             # else split by a '#' if it exists and take everything before it
