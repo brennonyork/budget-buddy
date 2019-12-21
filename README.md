@@ -95,6 +95,26 @@ the first rule in the file.
 More details and examples can be found in the comments of the
 `rules.example` file.
 
+# The future of budget-buddy
+
+The top priority for any app, IMO, is usability. Currently budget-buddy is in
+a v0.1 state where its useable, but still takes a bit of work. Some items I've
+been thinking about to add:
+
+1. **Interactive Mode** - Find a way to either allow people to run through their
+transactions and make rules 1-by-1 for them w free-text categories or, even
+easier, load a file of categories supplied by the user (or a sane set of
+defaults) that the user can choose from for each transaction.
+2. **Using Existing Categories** - Some financial institutions already provide
+pretty good labeling for their transactions. Would be great to either a)
+leave those transactions as is or b) allow the user to automatically create
+rules based on those labeled transactions.
+3. **Rules From Mint** - For users coming from Mint and want to merely move
+their transactions into a world that they own control, can we find a way to
+pull the rules from those transactions? This expands to a separate feature
+for budget-buddy to ingest a file and, for all labeled transactions, produce
+a rules file from that input.
+
 # Why create this?
 
 The first step to financial freedom is knowing where your money goes. As I
