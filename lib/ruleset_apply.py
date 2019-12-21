@@ -34,8 +34,6 @@ with open(ruleset_file, 'r') as rules:
             # else split by a '#' if it exists and take everything before it
             category, regex = map(lambda x: x.strip(), rule.split('#')[0].split(','))
             rule_map.append([category, regex])
-
-print(rule_map)
         
 with open(merge_file, 'r') as transactions:
     for transaction in transactions:
