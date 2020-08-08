@@ -33,6 +33,7 @@ SEARCH_DIR=""
 RULESET_FILE=""
 SPLIT_BY_MONTH=""
 INCL_HISTORY=""
+INTERACTIVE=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -68,6 +69,10 @@ while (( "$#" )); do
 	    ;;
 	"-h" | "--history")
 	    INCL_HISTORY="1"
+	    shift
+	    ;;
+	"-i" | "--interactive")
+	    INTERACTIVE="1"
 	    shift
 	    ;;
 	*)
@@ -149,17 +154,36 @@ find "${SEARCH_DIR}" -type f | \
     fi
 done
 
+[ ! "${VERBOSE}" = "" ] && \
+    printf "Merging assorted files found.\n"
+
 # 5. merge all clean files from various financial sources into a single
 #    unified file
 for file in $(find "${TMP_DIR}" -type f); do
     cat "${file}" >> "${MERGE_FILE}"
 done
 
+[ ! "${VERBOSE}" = "" ] && \
+    printf "Sorting transactions by date.\n"
+
 # 6. sort the single file by date (1st column)
 sort --reverse "${MERGE_FILE}" > "${MERGE_FILE}.sorted"
 mv "${MERGE_FILE}.sorted" "${MERGE_FILE}"
 
-# 7. apply the ruleset patterns across the unified file
+# 7.1 if we have interactive rule assignment then begin
+if [ ! "${INTERACTIVE}" = "" ]; then
+    # if we did not receive a ruleset file then create one
+    if [ "${RULESET_FILE}" = "" ]; then
+	RULESET_FILE="ruleset.$(date "+%Y-%m-%d").txt"
+	touch "${RULESET_FILE}"
+    fi
+    # then begin the interactive rule assignment
+    python "${DIR}/../lib/interactive.py" \
+	   "${RULESET_FILE}" \
+	   "${MERGE_FILE}" > "int.${RULESET_FILE}"
+fi
+
+# 7.2 apply the ruleset patterns across the unified file
 if [ ! "${RULESET_FILE}" = "" ]; then
     if [ ! "${INCL_HISTORY}" = "" ]; then
 	python "${DIR}/../lib/ruleset_apply.py" \
