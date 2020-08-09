@@ -34,6 +34,7 @@ RULESET_FILE=""
 SPLIT_BY_MONTH=""
 INCL_HISTORY=""
 INTERACTIVE=""
+CATEGORIES_FILE=""
 
 # Source in the core functions from the lib/ directory
 source "${DIR}/../lib/transform.sh"
@@ -74,6 +75,10 @@ while (( "$#" )); do
 	"-i" | "--interactive")
 	    INTERACTIVE="1"
 	    shift
+	    ;;
+	"-c" | "--categories")
+	    CATEGORIES_FILE="${2}"
+	    shift 2
 	    ;;
 	*)
 	    printf "WARN: Unrecognized option ${1}\n"
@@ -178,10 +183,18 @@ if [ ! "${INTERACTIVE}" = "" ]; then
 	touch "${RULESET_FILE}"
     fi
     # then begin the interactive rule assignment
-    python "${DIR}/../lib/interactive.py" \
-	   "${RULESET_FILE}" \
-	   "${MERGE_FILE}" \
-	   "int.${RULESET_FILE}"
+    if [ "${CATEGORIES_FILE}" = "" ]; then
+	python "${DIR}/../lib/interactive.py" \
+	       "${RULESET_FILE}" \
+	       "${MERGE_FILE}" \
+	       "int.${RULESET_FILE}"
+    else
+	python "${DIR}/../lib/interactive.py" \
+	       "${RULESET_FILE}" \
+	       "${MERGE_FILE}" \
+	       "int.${RULESET_FILE}" \
+	       "${CATEGORIES_FILE}"
+    fi
 fi
 
 # 7.2 apply the ruleset patterns across the unified file

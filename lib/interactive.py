@@ -70,7 +70,7 @@ if categories_file:
                 continue
             else:
                 # else split by a '#' if it exists and take everything before it
-                categories.append(c.split('#')[0])
+                categories.append(c.split('#')[0].strip())
 else:
     categories = default_categories;
 
@@ -100,7 +100,7 @@ with open(merge_file, 'r') as transactions:
             # from user input
             cls()
             sys.stdout.write("Merchant: "+m+"\n\n")
-            for i in range(0,len(categories)):
+            for i in range(0, len(categories)):
                 sys.stdout.write(" "+str(i+1)+".\t"+categories[i]+"\n")
             sys.stdout.write("\n")
             val = input("Choose the category: ")
