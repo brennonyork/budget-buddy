@@ -180,7 +180,8 @@ if [ ! "${INTERACTIVE}" = "" ]; then
     # then begin the interactive rule assignment
     python "${DIR}/../lib/interactive.py" \
 	   "${RULESET_FILE}" \
-	   "${MERGE_FILE}" > "int.${RULESET_FILE}"
+	   "${MERGE_FILE}" \
+	   "int.${RULESET_FILE}"
 fi
 
 # 7.2 apply the ruleset patterns across the unified file
