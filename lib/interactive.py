@@ -58,10 +58,6 @@ default_categories = [
     "Travel",
     "Gifts"]
 
-# from: https://stackoverflow.com/a/684344
-def cls():
-    os.system('cls' if os.name=='nt' else 'clear')
-
 if categories_file:
     with open(categories_file, 'r') as cf:
         for c in cf:
@@ -98,13 +94,31 @@ with open(merge_file, 'r') as transactions:
             # we've found a new transaction that doesn't match anything in
             # our ruleset so present an interactive prompt and read the category
             # from user input
-            cls()
+
+            # clear the screen
+            # - https://stackoverflow.com/a/684344
+            os.system('cls' if os.name=='nt' else 'clear')
+
+            # format in a nice-ish way to present the categories
             sys.stdout.write("Merchant: "+m+"\n\n")
+            # first give people the option to skip
+            sys.stdout.write(" 0.\tSkip this entry\n")
             for i in range(0, len(categories)):
                 sys.stdout.write(" "+str(i+1)+".\t"+categories[i]+"\n")
             sys.stdout.write("\n")
-            val = input("Choose the category: ")
-            new_rules.append(["interactive","^"+re.escape(m)+"$"])
+            val = input("Choose category this merchant belongs in: ")
+            print("val is:",val)
+
+            # skip if zero or nothing was input
+            if val == "0" or val == "":
+                continue
+            # check if the input is valid
+            elif int(val) in range(1, (len(categories)+1)):
+                new_rules.append([categories[int(val)-1],"^"+re.escape(m)+"$"])
+            # if text was provided then use that as the category label
+            elif not val == "":
+                new_rules.append(val,"^"+re.escape(m)+"$"])
+                
 
 # finally write out only the new rulesets we've found
 with open(output_file, 'w') as out:
